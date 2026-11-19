@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Race Tracker">
+<meta name="application-name" content="Race Tracker">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" id="touchIcon" href="">
+<link rel="manifest" id="manifestLink" href="">
+<title>Race Tracker</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text: #000000;
+    --text2: #6c6c70;
+    --sep: rgba(60,60,67,.18);
+    --fill: rgba(118,118,128,.12);
+    --accent: #ff6b00;
+    --accent2: #ff9500;
+    --green: #34c759;
+    --blue: #007aff;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card: #1c1c1e;
+      --text: #ffffff;
+      --text2: #8e8e93;
+      --sep: rgba(84,84,88,.55);
+      --fill: rgba(118,118,128,.24);
+      --blue: #0a84ff;
+      --green: #30d158;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    -webkit-user-select: none;
+    user-select: none;
+    padding: env(safe-area-inset-top) calc(16px + env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    overscroll-behavior-y: none;
+  }
+  input { -webkit-user-select: text; user-select: text; }
+  header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 12px 4px 8px;
+  }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: .4px; margin: 0; }
+  .clock { font-size: 17px; color: var(--text2); font-variant-numeric: tabular-nums; padding-bottom: 6px; }
+
+  .section-title {
+    font-size: 13px; text-transform: uppercase; color: var(--text2);
+    margin: 26px 16px 7px; letter-spacing: .2px;
+  }
+  .section-foot { font-size: 13px; color: var(--text2); margin: 7px 16px 0; line-height: 1.35; }
+  .card { background: var(--card); border-radius: var(--radius); overflow: hidden; }
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 44px; padding: 8px 16px; position: relative; font-size: 17px;
+  }
+  .row + .row::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 0;
+    border-top: .5px solid var(--sep);
+  }
+  .row .label { flex: 1; }
+  .row .sub { color: var(--text2); font-size: 17px; font-variant-numeric: tabular-nums; }
+  button.row {
+    width: 100%; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  button.row:active { background: var(--fill); }
+  .check { width: 20px; color: var(--blue); font-weight: 600; visibility: hidden; text-align: right; }
+  .selected .check { visibility: visible; }
+
+  /* Inputs */
+  .field {
+    font: inherit; font-size: 17px; color: var(--text); background: var(--fill);
+    border: 0; border-radius: 8px; padding: 7px 10px; text-align: right;
+    font-variant-numeric: tabular-nums; min-width: 0; outline: none;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field:focus { box-shadow: 0 0 0 2px var(--blue); }
+  .field.num { width: 92px; }
+  .field.text { width: 100%; text-align: left; background: transparent; padding: 0; border-radius: 0; }
+  .field.text:focus { box-shadow: none; }
+  input[type="time"].field { min-width: 120px; min-height: 36px; }
+  input[type="time"]::-webkit-date-and-time-value { text-align: right; }
+  .unit { color: var(--text2); font-size: 17px; margin-left: -4px; }
+  .inline { display: flex; align-items: center; gap: 8px; }
+
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 600; border: 0; border-radius: 8px;
+    padding: 8px 12px; cursor: pointer; white-space: nowrap;
+    background: color-mix(in srgb, var(--blue) 15%, transparent); color: var(--blue);
+  }
+  .btn:active { opacity: .5; }
+  .btn.small { padding: 6px 0; flex: 1; font-variant-numeric: tabular-nums; }
+  .steps { display: flex; gap: 8px; padding: 4px 16px 12px; }
+
+  /* Slider */
+  .slider-wrap { padding: 6px 16px 10px; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 32px; background: transparent; margin: 0;
+    --pct: 0%;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(to right, var(--accent) 0 var(--pct), var(--fill) var(--pct) 100%);
+  }
+  input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--fill); }
+  input[type="range"]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--accent); }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; margin-top: -11px;
+    background: #fff; box-shadow: 0 0.5px 4px rgba(0,0,0,.12), 0 6px 13px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 28px; height: 28px; border-radius: 50%; border: 0; background: #fff;
+    box-shadow: 0 0.5px 4px rgba(0,0,0,.12), 0 6px 13px rgba(0,0,0,.12);
+  }
+  input[type="range"].meet { --accent: var(--green); }
+  input[type="range"].meet::-moz-range-progress { background: var(--green); }
+  .ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); padding: 0 4px; font-variant-numeric: tabular-nums; }
+
+  /* Dashboard */
+  .hero {
+    background: linear-gradient(135deg, var(--accent) 0%, #ff3b30 100%);
+    color: #fff; border-radius: 16px; padding: 16px 18px; margin-top: 8px;
+    box-shadow: 0 8px 24px rgba(255,80,0,.25);
+  }
+  .hero .kicker { font-size: 13px; font-weight: 600; text-transform: uppercase; opacity: .85; letter-spacing: .3px; }
+  .hero .big { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 2px; letter-spacing: -.5px; }
+  .hero .detail { font-size: 15px; opacity: .92; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .hero .progress { height: 6px; background: rgba(255,255,255,.3); border-radius: 3px; margin-top: 14px; position: relative; }
+  .hero .progress .bar { position: absolute; inset: 0 auto 0 0; background: #fff; border-radius: 3px; width: 0%; transition: width .3s; }
+  .hero .progress .pin {
+    position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+    background: var(--green); border: 2px solid #fff; display: none;
+  }
+  .hero .progress .est {
+    position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+    background: #fff; opacity: .55; display: none;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .tile { background: var(--card); border-radius: var(--radius); padding: 12px 14px; }
+  .tile .k { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .tile .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; letter-spacing: -.3px; }
+  .tile .s { font-size: 13px; color: var(--text2); margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .tile.wide { grid-column: span 2; }
+  .muted { opacity: .45; }
+
+  .hidden { display: none !important; }
+  .reset { display: block; width: 100%; margin-top: 28px; text-align: center; color: #ff3b30; font: inherit; font-size: 17px; border: 0; background: var(--card); border-radius: var(--radius); min-height: 44px; cursor: pointer; }
+  .reset:active { background: var(--fill); }
+  .footer { text-align: center; font-size: 12px; color: var(--text2); margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Race Tracker</h1>
+  <div class="clock" id="clock">--:--</div>
+</header>
+
+<!-- ===== Dashboard ===== -->
+<div class="hero" id="hero">
+  <div class="kicker" id="heroKicker">Meet ETA</div>
+  <div class="big" id="heroBig">--:--</div>
+  <div class="detail" id="heroDetail">Set up the race to get started</div>
+  <div class="progress">
+    <div class="bar" id="heroBar"></div>
+    <div class="est" id="heroEst"></div>
+    <div class="pin" id="heroPin"></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="tile">
+    <div class="k">Avg Pace</div>
+    <div class="v" id="outPace">--:--</div>
+    <div class="s" id="outPaceKm">per mile</div>
+  </div>
+  <div class="tile">
+    <div class="k">Race Clock</div>
+    <div class="v" id="outClock">--:--</div>
+    <div class="s" id="outEstPos">since start</div>
+  </div>
+  <div class="tile">
+    <div class="k">Est. Finish</div>
+    <div class="v" id="outFinish">--:--</div>
+    <div class="s" id="outFinishIn">time of day</div>
+  </div>
+  <div class="tile">
+    <div class="k">Finish Time</div>
+    <div class="v" id="outFinishDur">--:--</div>
+    <div class="s" id="outFinishLeft">projected</div>
+  </div>
+</div>
+
+<!-- ===== Race Setup ===== -->
+<div class="section-title">Race Distance</div>
+<div class="card" id="raceList"></div>
+<div class="card hidden" id="customCard" style="margin-top:10px">
+  <div class="row">
+    <span class="label">Custom Distance</span>
+    <span class="inline">
+      <input class="field num" id="customMi" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      <span class="unit">mi</span>
+    </span>
+  </div>
+</div>
+
+<div class="section-title">Start</div>
+<div class="card">
+  <div class="row">
+    <span class="label">Start Time</span>
+    <span class="inline">
+      <input class="field" id="startTime" type="time" step="1">
+      <button class="btn" id="startNow">Set to Now</button>
+    </span>
+  </div>
+</div>
+<div class="section-foot">Tap “Set to Now” when your runner crosses the start line.</div>
+
+<!-- ===== Progress ===== -->
+<div class="section-title">Current Progress</div>
+<div class="card">
+  <div class="row">
+    <span class="label">Distance Covered</span>
+    <span class="inline">
+      <input class="field num" id="progMi" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      <span class="unit">mi</span>
+    </span>
+  </div>
+  <div class="slider-wrap">
+    <input type="range" id="progSlider" min="0" max="26.22" step="0.01" value="0">
+    <div class="ticks" id="progTicks"></div>
+  </div>
+  <div class="steps">
+    <button class="btn small" data-step="-1">−1</button>
+    <button class="btn small" data-step="-0.1">−0.1</button>
+    <button class="btn small" data-step="0.1">+0.1</button>
+    <button class="btn small" data-step="1">+1</button>
+  </div>
+  <div class="row">
+    <span class="label">Time at Mark</span>
+    <span class="inline">
+      <input class="field" id="progTime" type="time" step="1">
+      <button class="btn" id="progNow">Set to Now</button>
+    </span>
+  </div>
+</div>
+<div class="section-foot">The time of day they were at that distance (e.g. from a tracking app split or when you saw them).</div>
+
+<!-- ===== Meeting Spot ===== -->
+<div class="section-title">Meeting Spot</div>
+<div class="card">
+  <div class="row">
+    <input class="field text" id="meetName" type="text" placeholder="Location name (optional)" autocomplete="off">
+  </div>
+  <div class="row">
+    <span class="label">Distance Mark</span>
+    <span class="inline">
+      <input class="field num" id="meetMi" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off">
+      <span class="unit">mi</span>
+    </span>
+  </div>
+  <div class="slider-wrap">
+    <input type="range" class="meet" id="meetSlider" min="0" max="26.22" step="0.01" value="0">
+    <div class="ticks" id="meetTicks"></div>
+  </div>
+  <div class="row">
+    <span class="label">ETA at Spot</span>
+    <span class="sub" id="outMeet">--:--</span>
+  </div>
+  <div class="row">
+    <span class="label">Arrives In</span>
+    <span class="sub" id="outMeetIn">--</span>
+  </div>
+</div>
+
+<button class="reset" id="resetBtn">Reset Everything</button>
+<div class="footer">Estimates assume a steady average pace. Data is stored only on this device.</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const RACES = [
+    { id: 'mile',   name: '1 Mile',        mi: 1 },
+    { id: '5k',     name: '5K',            mi: 3.10686 },
+    { id: '10k',    name: '10K',           mi: 6.21371 },
+    { id: 'half',   name: 'Half Marathon', mi: 13.10938 },
+    { id: 'full',   name: 'Full Marathon', mi: 26.21876 },
+    { id: 'custom', name: 'Custom',        mi: null },
+  ];
+  const KM_PER_MI = 1.609344;
+  const DAY = 86400;
+  const STORE = 'raceTracker.v1';
+
+  const $ = id => document.getElementById(id);
+
+  // ---------- State ----------
+  const defaults = { race: 'full', customMi: '', start: '', progMi: 0, progTime: '', meetMi: 0, meetName: '' };
+  let state = { ...defaults };
+  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {}
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+
+  // ---------- Helpers ----------
+  const pad = n => String(n).padStart(2, '0');
+  const parseNum = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : NaN; };
+  const round2 = n => Math.round(n * 100) / 100;
+
+  function totalMi() {
+    if (state.race === 'custom') { const c = parseNum(state.customMi); return c > 0 ? c : 0; }
+    return RACES.find(r => r.id === state.race).mi;
+  }
+  function nowHMS() {
+    const d = new Date();
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function hmsToSec(s) {
+    if (!s) return NaN;
+    const [h, m, sec] = s.split(':').map(Number);
+    return h * 3600 + m * 60 + (sec || 0);
+  }
+  function nowSec() {
+    const d = new Date();
+    return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+  }
+  // elapsed from a to b on a 24h clock (handles crossing midnight)
+  const wrapDiff = (a, b) => ((b - a) % DAY + DAY) % DAY;
+
+  function fmtDur(sec, withHours) {
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return (h > 0 || withHours) ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+  }
+  function fmtPace(secPerUnit) {
+    if (!isFinite(secPerUnit) || secPerUnit <= 0) return '--:--';
+    const t = Math.round(secPerUnit);
+    return `${Math.floor(t / 60)}:${pad(t % 60)}`;
+  }
+  function fmtTOD(secOfDay, withSec) {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    d.setSeconds(Math.round(secOfDay));
+    let h = d.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+    return `${h}:${pad(d.getMinutes())}${withSec ? ':' + pad(d.getSeconds()) : ''} ${ap}`;
+  }
+  function fmtRelative(sec) {
+    const a = Math.abs(sec);
+    if (a < 60) return `${Math.round(a)} sec`;
+    if (a < 3600) { const m = Math.floor(a / 60), s = Math.round(a % 60); return `${m} min ${pad(s)} sec`; }
+    const h = Math.floor(a / 3600), m = Math.round((a % 3600) / 60);
+    return `${h} hr ${m} min`;
+  }
+
+  // ---------- Race list ----------
+  const raceList = $('raceList');
+  RACES.forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'row'; b.type = 'button'; b.dataset.id = r.id;
+    b.innerHTML = `<span class="check">✓</span><span class="label">${r.name}</span><span class="sub">${r.mi ? r.mi.toFixed(2) + ' mi' : 'Enter miles'}</span>`;
+    b.addEventListener('click', () => { state.race = r.id; onDistanceChange(); });
+    raceList.appendChild(b);
+  });
+
+  function renderRaceList() {
+    raceList.querySelectorAll('.row').forEach(b => b.classList.toggle('selected', b.dataset.id === state.race));
+    $('customCard').classList.toggle('hidden', state.race !== 'custom');
+    const customSub = raceList.querySelector('[data-id="custom"] .sub');
+    const c = parseNum(state.customMi);
+    customSub.textContent = c > 0 ? `${round2(c).toFixed(2)} mi` : 'Enter miles';
+  }
+
+  // ---------- Distance + slider pairs ----------
+  function bindPair(field, slider, ticks, key) {
+    const setSliderFill = () => {
+      const max = parseFloat(slider.max) || 1;
+      slider.style.setProperty('--pct', (Math.min(1, slider.value / max) * 100) + '%');
+    };
+    slider.addEventListener('input', () => {
+      state[key] = round2(parseFloat(slider.value));
+      field.value = state[key].toFixed(2);
+      setSliderFill(); save(); compute();
+    });
+    field.addEventListener('input', () => {
+      const n = parseNum(field.value);
+      state[key] = isFinite(n) ? Math.max(0, n) : 0;
+      slider.value = Math.min(state[key], parseFloat(slider.max));
+      setSliderFill(); save(); compute();
+    });
+    field.addEventListener('blur', () => {
+      const t = totalMi();
+      if (t > 0 && state[key] > t) state[key] = t;
+      field.value = round2(state[key]).toFixed(2);
+      slider.value = state[key];
+      setSliderFill(); save(); compute();
+    });
+    field.addEventListener('focus', () => setTimeout(() => field.select(), 0));
+    return {
+      refresh() {
+        const t = totalMi() || 1;
+        slider.max = round2(t);
+        if (totalMi() > 0 && state[key] > t) state[key] = round2(t);
+        slider.value = state[key];
+        if (document.activeElement !== field) field.value = round2(state[key]).toFixed(2);
+        setSliderFill();
+        // tick labels
+        const n = 4, parts = [];
+        for (let i = 0; i <= n; i++) parts.push(`<span>${round2(t * i / n).toString()}</span>`);
+        ticks.innerHTML = parts.join('');
+      }
+    };
+  }
+  const progPair = bindPair($('progMi'), $('progSlider'), $('progTicks'), 'progMi');
+  const meetPair = bindPair($('meetMi'), $('meetSlider'), $('meetTicks'), 'meetMi');
+
+  document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => {
+    const t = totalMi();
+    let v = round2((state.progMi || 0) + parseFloat(b.dataset.step));
+    v = Math.max(0, t > 0 ? Math.min(t, v) : v);
+    state.progMi = v; save(); progPair.refresh(); compute();
+  }));
+
+  function onDistanceChange() {
+    renderRaceList(); progPair.refresh(); meetPair.refresh(); save(); compute();
+  }
+
+  // ---------- Other inputs ----------
+  $('customMi').addEventListener('input', e => { state.customMi = e.target.value; onDistanceChange(); });
+
+  const startEl = $('startTime'), progTimeEl = $('progTime');
+  startEl.addEventListener('change', () => { state.start = startEl.value; save(); compute(); });
+  startEl.addEventListener('input',  () => { state.start = startEl.value; save(); compute(); });
+  progTimeEl.addEventListener('change', () => { state.progTime = progTimeEl.value; save(); compute(); });
+  progTimeEl.addEventListener('input',  () => { state.progTime = progTimeEl.value; save(); compute(); });
+
+  $('startNow').addEventListener('click', () => { state.start = startEl.value = nowHMS(); save(); compute(); flash(startEl); });
+  $('progNow').addEventListener('click', () => { state.progTime = progTimeEl.value = nowHMS(); save(); compute(); flash(progTimeEl); });
+  $('meetName').addEventListener('input', e => { state.meetName = e.target.value; save(); compute(); });
+
+  $('resetBtn').addEventListener('click', () => {
+    if (!confirm('Reset all race data?')) return;
+    state = { ...defaults }; save(); loadIntoUI();
+  });
+
+  function flash(el) {
+    el.animate([{ boxShadow: '0 0 0 3px var(--accent)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 600 });
+  }
+
+  // ---------- Calculation ----------
+  function compute() {
+    const now = nowSec();
+    $('clock').textContent = fmtTOD(now, true);
+
+    const total = totalMi();
+    const startS = hmsToSec(state.start);
+    const progS = hmsToSec(state.progTime);
+    const hasStart = isFinite(startS);
+    const raceElapsedNow = hasStart ? wrapDiff(startS, now) : NaN;
+
+    // Race clock
+    $('outClock').textContent = hasStart ? fmtDur(raceElapsedNow) : '--:--';
+
+    // Pace
+    let pace = NaN; // sec per mile
+    if (hasStart && isFinite(progS) && state.progMi > 0) {
+      const el = wrapDiff(startS, progS);
+      if (el > 0) pace = el / state.progMi;
+    }
+    const hasPace = isFinite(pace) && pace > 0;
+
+    $('outPace').textContent = hasPace ? fmtPace(pace) : '--:--';
+    $('outPaceKm').textContent = hasPace ? `/mi · ${fmtPace(pace / KM_PER_MI)} /km` : 'per mile';
+
+    // Estimated current position
+    let estPos = NaN;
+    if (hasPace) estPos = Math.min(total || Infinity, raceElapsedNow / pace);
+    $('outEstPos').textContent = hasPace ? `est. at mile ${estPos.toFixed(2)}` : 'since start';
+
+    // Finish
+    if (hasPace && total > 0) {
+      const finEl = pace * total;
+      const finTOD = startS + finEl;
+      const left = finEl - raceElapsedNow;
+      $('outFinish').textContent = fmtTOD(finTOD).replace(/ (AM|PM)$/, '');
+      $('outFinishIn').textContent = (fmtTOD(finTOD).match(/AM|PM/) || [''])[0] + (left > 0 ? ` · in ${fmtRelative(left)}` : ' · finished');
+      $('outFinishDur').textContent = fmtDur(finEl);
+      $('outFinishLeft').textContent = `${fmtPace(pace)}/mi × ${round2(total)} mi`;
+    } else {
+      $('outFinish').textContent = '--:--'; $('outFinishIn').textContent = 'time of day';
+      $('outFinishDur').textContent = '--:--'; $('outFinishLeft').textContent = 'projected';
+    }
+
+    // Meeting spot
+    const meet = state.meetMi;
+    const name = (state.meetName || '').trim();
+    const hero = { kicker: name ? `ETA · ${name}` : 'Meet ETA', big: '--:--', detail: '' };
+    if (hasPace && meet > 0) {
+      const meetEl = pace * meet;
+      const meetTOD = startS + meetEl;
+      const until = meetEl - raceElapsedNow;
+      $('outMeet').textContent = fmtTOD(meetTOD);
+      if (until > 0) {
+        $('outMeetIn').textContent = fmtRelative(until);
+        hero.big = fmtTOD(meetTOD);
+        hero.detail = `In ${fmtRelative(until)} · mile ${round2(meet).toFixed(2)}`;
+      } else {
+        const msg = meet <= state.progMi ? 'Already passed' : `Passed ~${fmtRelative(until)} ago`;
+        $('outMeetIn').textContent = msg;
+        hero.big = fmtTOD(meetTOD);
+        hero.detail = `${msg} · mile ${round2(meet).toFixed(2)}`;
+      }
+    } else {
+      $('outMeet').textContent = '--:--';
+      $('outMeetIn').textContent = '--';
+      if (!hasStart) hero.detail = 'Set the start time to begin';
+      else if (!hasPace) hero.detail = 'Enter current progress & time to get pace';
+      else hero.detail = 'Choose a meeting spot below';
+    }
+    $('heroKicker').textContent = hero.kicker;
+    $('heroBig').textContent = hero.big;
+    $('heroDetail').textContent = hero.detail;
+
+    // Progress bar
+    const T = total || 1;
+    $('heroBar').style.width = (Math.min(1, (state.progMi || 0) / T) * 100) + '%';
+    const pin = $('heroPin');
+    pin.style.display = meet > 0 && total > 0 ? 'block' : 'none';
+    pin.style.left = (Math.min(1, meet / T) * 100) + '%';
+    const est = $('heroEst');
+    est.style.display = hasPace && total > 0 ? 'block' : 'none';
+    if (hasPace) est.style.left = (Math.min(1, estPos / T) * 100) + '%';
+  }
+
+  // ---------- Init ----------
+  function loadIntoUI() {
+    $('customMi').value = state.customMi || '';
+    startEl.value = state.start || '';
+    progTimeEl.value = state.progTime || '';
+    $('meetName').value = state.meetName || '';
+    onDistanceChange();
+  }
+  loadIntoUI();
+  setInterval(compute, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) compute(); });
+
+  // ---------- Home-screen icon + manifest (generated, so the app stays one file) ----------
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#ff8a00'); grad.addColorStop(1, '#ff3b30');
+    g.fillStyle = grad; g.fillRect(0, 0, 512, 512);
+    g.fillStyle = 'rgba(255,255,255,.95)';
+    g.font = 'bold 300px -apple-system, system-ui, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('🏃', 256, 250);
+    g.font = 'bold 64px -apple-system, system-ui, sans-serif';
+    g.fillText('PACE', 256, 440);
+    const icon = c.toDataURL('image/png');
+    $('touchIcon').href = icon;
+    const manifest = {
+      name: 'Race Tracker', short_name: 'Race Tracker', display: 'standalone',
+      start_url: location.href.split('#')[0], background_color: '#000000', theme_color: '#000000',
+      icons: [{ src: icon, sizes: '512x512', type: 'image/png' }]
+    };
+    $('manifestLink').href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
